@@ -124,7 +124,7 @@ async def set_admin_role(interaction: discord.Interaction, role: discord.Role):
 
 @client.tree.command(name="setraidchannel", description="Set the raid voice channel.")
 @admin_only()
-async def set_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+async def set_raid_channel(interaction: discord.Interaction, channel: discord.abc.GuildChannel):
     logging.info("Setting raid channel")
     guild_id = interaction.guild.id
     client.cursor.execute('''
@@ -138,7 +138,7 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.Vo
 
 @client.tree.command(name="setdestinationchannel", description="Set the destination voice channel.")
 @admin_only()
-async def set_destination_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+async def set_destination_channel(interaction: discord.Interaction, channel: discord.abc.GuildChannel):
     logging.info("Setting destination channel")
     guild_id = interaction.guild.id
     client.cursor.execute('''
