@@ -18,6 +18,7 @@ logging.basicConfig(
 # Intents required for the bot
 intents = discord.Intents.default()
 intents.members = True
+intents.guilds = True
 intents.voice_states = True
 
 class RaidMoverBot(discord.Client):
@@ -186,13 +187,20 @@ async def move_raid(interaction: discord.Interaction):
 
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error):
-    if isinstance(error, app_commands.CheckFailure):
-        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+    if isinstance(error, app_commands.TransformerError):
+        # Send an error message if possible
+        if not interaction.response.is_done():
+            await interaction.response.send_message(str(error), ephemeral=True)
+        logging.error(f"TransformerError: {error}")
+    elif isinstance(error, app_commands.CheckFailure):
+        if not interaction.response.is_done():
+            await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
         logging.warning(f"User '{interaction.user}' tried to use a command without sufficient permissions.")
     else:
-        await interaction.response.send_message("An error occurred.", ephemeral=True)
-        logging.error(f"An error occurred: {error}")
-        raise error
+        logging.error(f"An unexpected error occurred: {error}")
+        if not interaction.response.is_done():
+            await interaction.response.send_message("An unexpected error occurred.", ephemeral=True)
+
 
 # Read the bot token from an environment variable
 if not TOKEN:
