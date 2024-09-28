@@ -51,20 +51,38 @@ client = RaidMoverBot()
 
 def owner_or_admin():
     async def predicate(interaction: discord.Interaction):
+        # Ensure the interaction is in a guild
+        if interaction.guild is None:
+            logging.error("Interaction guild is None.")
+            return False
+
         # Allow if the user is the guild owner
-        if interaction.user == interaction.guild.owner:
+        if interaction.user.id == interaction.guild.owner_id:
+            logging.info("User is guild owner.")
             return True
+
         # Allow if the user has Administrator permissions
-        return interaction.user.guild_permissions.administrator
+        has_admin = interaction.permissions.administrator
+        logging.info(f"User has administrator permissions: {has_admin}")
+        return has_admin
     return app_commands.check(predicate)
 
+
 def is_admin(interaction: discord.Interaction):
+    # Ensure the interaction is in a guild
+    if interaction.guild is None:
+        logging.error("Interaction guild is None.")
+        return False
+
     # Allow if the user is the guild owner
-    if interaction.user == interaction.guild.owner:
+    if interaction.user.id == interaction.guild.owner_id:
         return True
+
     # Allow if the user has Administrator permissions
-    if interaction.user.guild_permissions.administrator:
+    if interaction.permissions.administrator:
         return True
+
+    # Check if the user has the custom admin role
     guild_id = interaction.guild.id
     user_roles = interaction.user.roles
     client.cursor.execute('SELECT admin_role_id FROM settings WHERE guild_id = ?', (guild_id,))
@@ -74,6 +92,7 @@ def is_admin(interaction: discord.Interaction):
         return admin_role in user_roles
     else:
         return False
+
 
 def admin_only():
     async def predicate(interaction: discord.Interaction):
