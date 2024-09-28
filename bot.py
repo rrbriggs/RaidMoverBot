@@ -6,6 +6,7 @@ import sqlite3
 import os
 import logging
 
+# load_dotenv() should be useless when deployed
 load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 
@@ -29,9 +30,10 @@ class RaidMoverBot(discord.Client):
 
     async def setup_hook(self):
         # Sync commands for each guild
-        for guild in self.guilds:
-            self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
+        await self.tree.sync()
+        # for guild in self.guilds:
+        #     self.tree.copy_global_to(guild=guild)
+        #     await self.tree.sync(guild=guild)
 
     def setup_database(self):
         # Create a table to store settings
@@ -47,7 +49,22 @@ class RaidMoverBot(discord.Client):
 
 client = RaidMoverBot()
 
+def owner_or_admin():
+    async def predicate(interaction: discord.Interaction):
+        # Allow if the user is the guild owner
+        if interaction.user == interaction.guild.owner:
+            return True
+        # Allow if the user has Administrator permissions
+        return interaction.user.guild_permissions.administrator
+    return app_commands.check(predicate)
+
 def is_admin(interaction: discord.Interaction):
+    # Allow if the user is the guild owner
+    if interaction.user == interaction.guild.owner:
+        return True
+    # Allow if the user has Administrator permissions
+    if interaction.user.guild_permissions.administrator:
+        return True
     guild_id = interaction.guild.id
     user_roles = interaction.user.roles
     client.cursor.execute('SELECT admin_role_id FROM settings WHERE guild_id = ?', (guild_id,))
@@ -56,7 +73,7 @@ def is_admin(interaction: discord.Interaction):
         admin_role = interaction.guild.get_role(result[0])
         return admin_role in user_roles
     else:
-        return interaction.user.guild_permissions.administrator
+        return False
 
 def admin_only():
     async def predicate(interaction: discord.Interaction):
@@ -73,7 +90,7 @@ async def on_guild_join(guild):
     await client.tree.sync(guild=guild)
 
 @client.tree.command(name="setadminrole", description="Set the admin role for bot commands.")
-@app_commands.checks.has_permissions(administrator=True)
+@owner_or_admin()
 async def set_admin_role(interaction: discord.Interaction, role: discord.Role):
     logging.info("Setting admin role")
     guild_id = interaction.guild.id
