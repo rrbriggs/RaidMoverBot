@@ -125,7 +125,7 @@ async def set_admin_role(interaction: discord.Interaction, role: discord.Role):
 
 @client.tree.command(name="setraidchannel", description="Set the raid voice channel.")
 @admin_only()
-async def set_raid_channel(interaction: discord.Interaction, channel: discord.abc.GuildChannel):
+async def set_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
     logging.info("Setting raid channel")
     guild_id = interaction.guild.id
     client.cursor.execute('''
@@ -139,7 +139,7 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.ab
 
 @client.tree.command(name="setdestinationchannel", description="Set the destination voice channel.")
 @admin_only()
-async def set_destination_channel(interaction: discord.Interaction, channel: discord.abc.GuildChannel):
+async def set_destination_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
     logging.info("Setting destination channel")
     guild_id = interaction.guild.id
     client.cursor.execute('''
@@ -164,20 +164,21 @@ async def move_raid(interaction: discord.Interaction):
         destination_channel = interaction.guild.get_channel(result[1])
         logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
         if raid_channel and destination_channel:
-            members = raid_channel.members
-            if members:
-                await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
-                logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
-                for member in members:
-                    try:
-                        await member.move_to(destination_channel)
-                        logging.info(f"Moved member '{member.display_name}'")
-                    except Exception as e:
-                        logging.error(f"Could not move {member.display_name}: {e}")
-                await interaction.followup.send("All members moved successfully.", ephemeral=True)
-            else:
-                await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
-                logging.info("No members to move in the raid channel.")
+            while len(raid_channel.members > 0) :
+                members = raid_channel.members
+                if members:
+                    await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
+                    logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
+                    for member in members:
+                        try:
+                            await member.move_to(destination_channel)
+                            logging.info(f"Moved member '{member.display_name}'")
+                        except Exception as e:
+                            logging.error(f"Could not move {member.display_name}: {e}")
+                    await interaction.followup.send("All members moved successfully.", ephemeral=True)
+                else:
+                    await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
+                    logging.info("No members to move in the raid channel.")
         else:
             await interaction.response.send_message("Configured channels are invalid.", ephemeral=True)
             logging.error("Configured channels are invalid.")
