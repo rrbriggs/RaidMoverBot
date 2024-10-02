@@ -25,7 +25,7 @@ class RaidMoverBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
-        self.db = sqlite3.connect('settings.db')
+        self.db = sqlite3.connect('/data/settings.db')
         self.cursor = self.db.cursor()
         self.setup_database()
 
