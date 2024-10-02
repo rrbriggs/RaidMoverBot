@@ -18,3 +18,9 @@ EXPOSE 8080
 
 # Command to run when starting the container
 CMD ["python", "bot.py"]
+
+# Create db directory
+RUN mkdir -p /data
+
+# Set permissions for the /data directory
+RUN chmod 755 /data
