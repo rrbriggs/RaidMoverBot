@@ -41,9 +41,17 @@ class RaidMoverBot(discord.Client):
                 guild_id INTEGER PRIMARY KEY,
                 admin_role_id INTEGER DEFAULT NULL,
                 raid_channel_id INTEGER DEFAULT NULL,
+                alt_raid_channel_id INTEGER DEFAULT NULL,
                 destination_channel_id INTEGER DEFAULT NULL
             )
         ''')
+
+        # Add new column `admin_role_id` if it doesn't exist
+        try:
+            self.cursor.execute('ALTER TABLE settings ADD COLUMN admin_role_id INTEGER DEFAULT NULL')
+        except sqlite3.OperationalError:
+            # The column already exists; no need to add it
+            pass
         self.db.commit()
 
 client = RaidMoverBot()
@@ -135,6 +143,20 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.Vo
     await interaction.response.send_message(f"Raid channel set to {channel.name}", ephemeral=True)
     logging.info(f"Raid channel set to '{channel.name}' in guild '{interaction.guild.name}' by user '{interaction.user}'")
 
+@client.tree.command(name="setaltraidchannel", description="Set the alt raid voice channel.")
+@admin_only()
+async def set_alt_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+    logging.info("Setting alt raid channel")
+    guild_id = interaction.guild.id
+    client.cursor.execute('''
+        INSERT INTO settings (guild_id, alt_raid_channel_id)
+        VALUES (?, ?)
+        ON CONFLICT(guild_id) DO UPDATE SET alt_raid_channel_id=excluded.alt_raid_channel_id
+    ''', (guild_id, channel.id))
+    client.db.commit()
+    await interaction.response.send_message(f"Alt raid channel set to {channel.name}", ephemeral=True)
+    logging.info(f"Alt raid channel set to '{channel.name}' in guild '{interaction.guild.name}' by user '{interaction.user}'")
+
 @client.tree.command(name="getconfigs", description="Get configs, this will be nasty.")
 @admin_only()
 async def get_raid_channel(interaction: discord.Interaction):
@@ -167,6 +189,19 @@ async def move_raid(interaction: discord.Interaction):
     client.cursor.execute('SELECT raid_channel_id, destination_channel_id FROM settings WHERE guild_id = ?', (guild_id,))
     result = client.cursor.fetchone()
     logging.info(f"Database query result: {result}")
+    await voice_channel_exodus(interaction, result)
+
+@client.tree.command(name="movealtraid", description="Move users from the alt-raid channel to the destination channel.")
+@admin_only()
+async def move_alt_raid(interaction: discord.Interaction):
+    logging.info("Moving the alt raid now")
+    guild_id = interaction.guild.id
+    client.cursor.execute('SELECT alt_raid_channel_id, destination_channel_id FROM settings WHERE guild_id = ?', (guild_id,))
+    result = client.cursor.fetchone()
+    logging.info(f"Database query result: {result}")
+    await voice_channel_exodus(interaction, result)
+
+async def voice_channel_exodus(interaction, result):
     if result and result[0] and result[1]:
         raid_channel = interaction.guild.get_channel(result[0])
         destination_channel = interaction.guild.get_channel(result[1])
