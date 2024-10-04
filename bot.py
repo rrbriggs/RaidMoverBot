@@ -34,6 +34,8 @@ class RaidMoverBot(discord.Client):
         # Sync commands for each guild
         await self.tree.sync()
 
+# TODO: will adding a new field like this blow shit up?
+# TODO: i probably need to figure out how to do an evolution
     def setup_database(self):
         # Create a table to store settings
         self.cursor.execute('''
@@ -41,6 +43,7 @@ class RaidMoverBot(discord.Client):
                 guild_id INTEGER PRIMARY KEY,
                 admin_role_id INTEGER DEFAULT NULL,
                 raid_channel_id INTEGER DEFAULT NULL,
+                alt_raid_channel_id INTEGER DEFAULT NULL,
                 destination_channel_id INTEGER DEFAULT NULL
             )
         ''')
@@ -135,6 +138,21 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.Vo
     await interaction.response.send_message(f"Raid channel set to {channel.name}", ephemeral=True)
     logging.info(f"Raid channel set to '{channel.name}' in guild '{interaction.guild.name}' by user '{interaction.user}'")
 
+# TODO: this contains a lot of dupe code and likely could be refactored
+@client.tree.command(name="setaltraidchannel", description="Set the alt raid voice channel.")
+@admin_only()
+async def set_alt_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+    logging.info("Setting alt raid channel")
+    guild_id = interaction.guild.id
+    client.cursor.execute('''
+        INSERT INTO settings (guild_id, alt_raid_channel_id)
+        VALUES (?, ?)
+        ON CONFLICT(guild_id) DO UPDATE SET alt_raid_channel_id=excluded.alt_raid_channel_id
+    ''', (guild_id, channel.id))
+    client.db.commit()
+    await interaction.response.send_message(f"Alt raid channel set to {channel.name}", ephemeral=True)
+    logging.info(f"Alt raid channel set to '{channel.name}' in guild '{interaction.guild.name}' by user '{interaction.user}'")
+
 @client.tree.command(name="getconfigs", description="Get configs, this will be nasty.")
 @admin_only()
 async def get_raid_channel(interaction: discord.Interaction):
@@ -165,6 +183,43 @@ async def move_raid(interaction: discord.Interaction):
     logging.info("Moving the raid now")
     guild_id = interaction.guild.id
     client.cursor.execute('SELECT raid_channel_id, destination_channel_id FROM settings WHERE guild_id = ?', (guild_id,))
+    result = client.cursor.fetchone()
+    logging.info(f"Database query result: {result}")
+    if result and result[0] and result[1]:
+        raid_channel = interaction.guild.get_channel(result[0])
+        destination_channel = interaction.guild.get_channel(result[1])
+        logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
+        if raid_channel and destination_channel:
+            while len(raid_channel.members) > 0:
+                members = raid_channel.members
+                if members:
+                    await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
+                    logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
+                    for member in members:
+                        try:
+                            await member.move_to(destination_channel)
+                            logging.info(f"Moved member '{member.display_name}'")
+                            await asyncio.sleep(0.1)  # attempt a delay to avoid rate limit
+                        except Exception as e:
+                            logging.error(f"Could not move {member.display_name}: {e}")
+                    await interaction.followup.send("All members moved successfully.", ephemeral=True)
+                else:
+                    await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
+                    logging.info("No members to move in the raid channel.")
+        else:
+            await interaction.response.send_message("Configured channels are invalid.", ephemeral=True)
+            logging.error("Configured channels are invalid.")
+    else:
+        await interaction.response.send_message("Raid or destination channel not set.", ephemeral=True)
+        logging.warning("Raid or destination channel not set.")
+
+# TODO: shit load of reused code here, needs to be refactored when it's not 1am
+@client.tree.command(name="movealtraid", description="Move users from the alt-raid channel to the destination channel.")
+@admin_only()
+async def move_alt_raid(interaction: discord.Interaction):
+    logging.info("Moving the alt raid now")
+    guild_id = interaction.guild.id
+    client.cursor.execute('SELECT alt_raid_channel_id, destination_channel_id FROM settings WHERE guild_id = ?', (guild_id,))
     result = client.cursor.fetchone()
     logging.info(f"Database query result: {result}")
     if result and result[0] and result[1]:
