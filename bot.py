@@ -32,9 +32,6 @@ class RaidMoverBot(discord.Client):
     async def setup_hook(self):
         # Sync commands for each guild
         await self.tree.sync()
-        # for guild in self.guilds:
-        #     self.tree.copy_global_to(guild=guild)
-        #     await self.tree.sync(guild=guild)
 
     def setup_database(self):
         # Create a table to store settings
@@ -173,6 +170,7 @@ async def move_raid(interaction: discord.Interaction):
                         try:
                             await member.move_to(destination_channel)
                             logging.info(f"Moved member '{member.display_name}'")
+                            await asyncio.sleep(0.1)  # attempt a delay to avoid rate limit
                         except Exception as e:
                             logging.error(f"Could not move {member.display_name}: {e}")
                     await interaction.followup.send("All members moved successfully.", ephemeral=True)
