@@ -134,6 +134,15 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.Vo
     await interaction.response.send_message(f"Raid channel set to {channel.name}", ephemeral=True)
     logging.info(f"Raid channel set to '{channel.name}' in guild '{interaction.guild.name}' by user '{interaction.user}'")
 
+@client.tree.command(name="getconfigs", description="Get configs, this will be nasty.")
+@admin_only()
+async def get_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+    logging.info("Setting raid channel")
+    client.cursor.execute('SELECT * FROM settings WHERE guild_id = ?', (guild_id,))
+    result = client.cursor.fetchone()
+    await interaction.response.send_message(f"Configs for  '{interaction.guild.name} by user '{interaction.user} are --> '{result}'")
+    logging.info(f"Configs sent '{result}' requested by user '{interaction.user}' from guild '{interaction.guild.name}'")
+
 @client.tree.command(name="setdestinationchannel", description="Set the destination voice channel.")
 @admin_only()
 async def set_destination_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
