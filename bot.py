@@ -45,10 +45,12 @@ class RaidMoverBot(discord.Client):
                 destination_channel_id INTEGER DEFAULT NULL
             )
         ''')
+        self.db.commit()
 
         # Add new column `admin_role_id` if it doesn't exist
+        # This is quite possibly the shittiest way to do this and have it still work
         try:
-            self.cursor.execute('ALTER TABLE settings ADD COLUMN admin_role_id INTEGER DEFAULT NULL')
+            self.cursor.execute('ALTER TABLE settings ADD COLUMN alt_raid_channel_id INTEGER DEFAULT NULL')
         except sqlite3.OperationalError:
             # The column already exists; no need to add it
             pass
