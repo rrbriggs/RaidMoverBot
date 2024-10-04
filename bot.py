@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
+import asyncio
 import sqlite3
 import os
 import logging
