@@ -136,8 +136,9 @@ async def set_raid_channel(interaction: discord.Interaction, channel: discord.Vo
 
 @client.tree.command(name="getconfigs", description="Get configs, this will be nasty.")
 @admin_only()
-async def get_raid_channel(interaction: discord.Interaction, channel: discord.VoiceChannel):
+async def get_raid_channel(interaction: discord.Interaction):
     logging.info("Setting raid channel")
+    guild_id = interaction.guild.id
     client.cursor.execute('SELECT * FROM settings WHERE guild_id = ?', (guild_id,))
     result = client.cursor.fetchone()
     await interaction.response.send_message(f"Configs for  '{interaction.guild.name} by user '{interaction.user} are --> '{result}'")
