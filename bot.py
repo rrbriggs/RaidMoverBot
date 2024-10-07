@@ -76,7 +76,6 @@ def owner_or_admin():
         return has_admin
     return app_commands.check(predicate)
 
-
 def is_admin(interaction: discord.Interaction):
     # Ensure the interaction is in a guild
     if interaction.guild is None:
@@ -101,7 +100,6 @@ def is_admin(interaction: discord.Interaction):
         return admin_role in user_roles
     else:
         return False
-
 
 def admin_only():
     async def predicate(interaction: discord.Interaction):
