@@ -222,7 +222,10 @@ async def voice_channel_exodus(interaction, result):
                             logging.error(f"Could not move {member.display_name}: {e}")
                     # final check on the raid channel, in case anyone joined during the moving process
                     raid_channel = interaction.guild.get_channel(result[0])
-                    await interaction.followup.send("All members moved successfully.", ephemeral=True)
+                    if len(raid_channel.members) == 0:
+                        await interaction.followup.send("All members moved successfully.", ephemeral=True)
+                    else: 
+                        logging.info("There are still members in the channel, trying again")
                 else:
                     await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
                     logging.info("No members to move in the raid channel.")
