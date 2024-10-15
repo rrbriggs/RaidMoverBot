@@ -208,7 +208,7 @@ async def voice_channel_exodus(interaction, result):
         logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
         if raid_channel and destination_channel:
             while len(raid_channel.members) > 0:
-                logging.info(f"{raid_channel} currently has {len(raid_channel.members)} members in the channel")
+                logging.info(f"* {raid_channel} voice channel currently has {len(raid_channel.members)} member(s) in the channel")
                 members = raid_channel.members
                 if members:
                     await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
