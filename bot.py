@@ -201,14 +201,15 @@ async def move_alt_raid(interaction: discord.Interaction):
     logging.info(f"Database query result: {result}")
     await voice_channel_exodus(interaction, result)
 
-async def voice_channel_exodus(interaction, channel_result):
-    if channel_result and channel_result[0] and channel_result[1]:
-        raid_channel = interaction.guild.get_channel(channel_result[0])
-        destination_channel = interaction.guild.get_channel(channel_result[1])
+async def voice_channel_exodus(interaction, result):
+    if result and result[0] and result[1]:
+        raid_channel = interaction.guild.get_channel(result[0])
+        destination_channel = interaction.guild.get_channel(result[1])
         logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
         if raid_channel and destination_channel:
-            members = raid_channel.members
-            while len(members) > 0:
+            while len(raid_channel.members) > 0:
+                logging.info(f"{raid_channel} currently has {len(raid_channel.members)} members in the channel")
+                members = raid_channel.members
                 if members:
                     await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
                     logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
@@ -219,10 +220,13 @@ async def voice_channel_exodus(interaction, channel_result):
                             await asyncio.sleep(0.1)  # attempt a delay to avoid rate limit
                         except Exception as e:
                             logging.error(f"Could not move {member.display_name}: {e}")
+                    # final check on the raid channel, in case anyone joined during the moving process
+                    raid_channel = interaction.guild.get_channel(result[0])
                     await interaction.followup.send("All members moved successfully.", ephemeral=True)
                 else:
                     await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
                     logging.info("No members to move in the raid channel.")
+                    
         else:
             await interaction.response.send_message("Configured channels are invalid.", ephemeral=True)
             logging.error("Configured channels are invalid.")
