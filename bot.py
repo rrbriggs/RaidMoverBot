@@ -201,14 +201,14 @@ async def move_alt_raid(interaction: discord.Interaction):
     logging.info(f"Database query result: {result}")
     await voice_channel_exodus(interaction, result)
 
-async def voice_channel_exodus(interaction, result):
-    if result and result[0] and result[1]:
-        raid_channel = interaction.guild.get_channel(result[0])
-        destination_channel = interaction.guild.get_channel(result[1])
+async def voice_channel_exodus(interaction, channel_result):
+    if channel_result and channel_result[0] and channel_result[1]:
+        raid_channel = interaction.guild.get_channel(channel_result[0])
+        destination_channel = interaction.guild.get_channel(channel_result[1])
         logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
         if raid_channel and destination_channel:
-            while len(raid_channel.members) > 0:
-                members = raid_channel.members
+            members = raid_channel.members
+            while len(members) > 0:
                 if members:
                     await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
                     logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
