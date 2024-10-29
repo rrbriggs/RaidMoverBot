@@ -208,34 +208,39 @@ async def voice_channel_exodus(interaction, result):
         logging.info(f"Raid Channel: {raid_channel}, Destination Channel: {destination_channel}")
         if raid_channel and destination_channel:
             while len(raid_channel.members) > 0:
-                logging.info(f"* {raid_channel} voice channel currently has {len(raid_channel.members)} member(s) in the channel")
-                members = raid_channel.members
-                if members:
-                    await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
-                    logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
-                    for member in members:
-                        try:
-                            await member.move_to(destination_channel)
-                            logging.info(f"Moved member '{member.display_name}'")
-                            await asyncio.sleep(0.1)  # attempt a delay to avoid rate limit
-                        except Exception as e:
-                            logging.error(f"Could not move {member.display_name}: {e}")
-                    # final check on the raid channel, in case anyone joined during the moving process
-                    raid_channel = interaction.guild.get_channel(result[0])
-                    if len(raid_channel.members) == 0:
-                        await interaction.followup.send("All members moved successfully.", ephemeral=True)
-                    else: 
-                        logging.info("There are still members in the channel, trying again")
-                else:
-                    await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
-                    logging.info("No members to move in the raid channel.")
-                    
+                await move_users(interaction, result, raid_channel, destination_channel)
+                raid_channel = interaction.guild.get_channel(result[0])
+                if len(raid_channel.members) > 0: 
+                    logging.info(f"There are still members in the channel, attempting to move them again. Members: {raid_channel.members}")
         else:
             await interaction.response.send_message("Configured channels are invalid.", ephemeral=True)
             logging.error("Configured channels are invalid.")
     else:
         await interaction.response.send_message("Raid or destination channel not set.", ephemeral=True)
         logging.warning("Raid or destination channel not set.")
+
+async def move_users(interaction, result, raid_channel, destination_channel):
+    logging.info(f"* {raid_channel} voice channel currently has {len(raid_channel.members)} member(s) in the channel")
+    members = raid_channel.members
+    if members:
+        await interaction.response.send_message(f"Moving {len(members)} members...", ephemeral=True)
+        logging.info(f"Moving {len(members)} members from '{raid_channel.name}' to '{destination_channel.name}'")
+        for member in members:
+            try:
+                await member.move_to(destination_channel)
+                logging.info(f"Moved member '{member.display_name}'")
+                await asyncio.sleep(0.1)  # attempt a delay to avoid rate limit
+            except Exception as e:
+                logging.error(f"Could not move {member.display_name}: {e}")
+                    # final check on the raid channel, in case anyone joined during the moving process
+        raid_channel = interaction.guild.get_channel(result[0])
+        if len(raid_channel.members) == 0:
+            await interaction.followup.send("All members moved successfully.", ephemeral=True)
+        else: 
+            logging.info("There are still members in the channel, trying again")
+    else:
+        await interaction.response.send_message("No members in the raid channel.", ephemeral=True)
+        logging.info("No members to move in the raid channel.")
 
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error):
