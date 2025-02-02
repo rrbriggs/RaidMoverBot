@@ -100,3 +100,4 @@ The provided `fly.toml` file contains the Fly.io configuration settings. Key con
 ## Scaling Limitations
 
 Currently, RaidMoverBot is **not built for scaling beyond one machine**. This might be solved as simply as swapping to a different db, if you're using fly.io, their postgres setup is probably a good choice.
+
